@@ -7043,9 +7043,11 @@ getinfo_helper_config(control_connection_t *conn,
     int i;
     for (i = 0; _option_vars[i].name; ++i) {
       const config_var_t *var = &_option_vars[i];
-      char *val = esc_for_log(var->initvalue);
-      smartlist_add_asprintf(sl, "%s %s\n",var->name,val);
-      tor_free(val);
+      if (var->initvalue != NULL) {
+	  char *val = esc_for_log(var->initvalue);
+	  smartlist_add_asprintf(sl, "%s %s\n",var->name,val);
+	  tor_free(val);
+      }
     }
     *answer = smartlist_join_strings(sl, "", 0, NULL);
     SMARTLIST_FOREACH(sl, char *, c, tor_free(c));
