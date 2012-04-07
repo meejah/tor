@@ -7030,9 +7030,7 @@ getinfo_helper_config(control_connection_t *conn,
     *answer = smartlist_join_strings(sl, "", 0, NULL);
     SMARTLIST_FOREACH(sl, char *, c, tor_free(c));
     smartlist_free(sl);
-  }
-  else if (!strcmp(question, "config/defaults"))
-  {
+  } else if (!strcmp(question, "config/defaults")) {
     smartlist_t *sl = smartlist_new();
     int i;
     for (i = 0; _option_vars[i].name; ++i) {
