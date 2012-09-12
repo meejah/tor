@@ -1807,6 +1807,10 @@ file_status(const char *fname)
     return FN_DIR;
   else if (st.st_mode & S_IFREG)
     return FN_FILE;
+#ifndef _WIN32
+  else if (st.st_mode & S_IFIFO)
+    return FN_FILE;
+#endif
   else
     return FN_ERROR;
 }
@@ -2237,6 +2241,38 @@ write_bytes_to_new_file(const char *fname, const char *str, size_t len,
                                   (bin?O_BINARY:O_TEXT));
 }
 
+/**
+ * Read the contents of the open file <b>fd</b> presuming it is a FIFO
+ * (or similar) file descriptor for which the size of the file isn't
+ * known ahead of time. NULL is returned if this fails for some reason.
+ */
+
+char *
+read_file_to_str_until_eof(int fd, unsigned int max_bytes_to_read)
+{
+  ssize_t r;
+  size_t pos = 0;
+  char *string = NULL;
+  unsigned int string_max = 0;
+
+  do {
+    string_max = pos + 1024 + 1;
+    if (string_max > max_bytes_to_read)
+      string_max = max_bytes_to_read;
+    string = tor_realloc(string, string_max);
+    r = read(fd, string + pos, string_max - pos);
+    if (r < 0) {
+      tor_free(string);
+      return NULL;
+    }
+
+    pos += r;
+  } while (r > 0 && pos < max_bytes_to_read);
+
+  string[pos] = '\0';
+  return string;
+}
+
 /** Read the contents of <b>filename</b> into a newly allocated
  * string; return the string on success or NULL on failure.
  *
@@ -2284,6 +2320,17 @@ read_file_to_str(const char *filename, int flags, struct stat *stat_out)
     errno = save_errno;
     return NULL;
   }
+
+#ifndef _WIN32
+  // magic number; reading at most 1MB -- should go somewhere better?
+  if (S_ISFIFO(statbuf.st_mode)) {
+    string = read_file_to_str_until_eof(fd, 1024*1024);
+    if (string && stat_out) {
+      memcpy(stat_out, &statbuf, sizeof(struct stat));
+    }
+    return string;
+  }
+#endif
 
   if ((uint64_t)(statbuf.st_size)+1 >= SIZE_T_CEILING)
     return NULL;

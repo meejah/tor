@@ -360,6 +360,8 @@ struct stat;
 #endif
 char *read_file_to_str(const char *filename, int flags, struct stat *stat_out)
   ATTR_MALLOC;
+char *read_file_to_str_until_eof(int fd, unsigned int max_bytes_to_read)
+  ATTR_MALLOC;
 const char *parse_config_line_from_str(const char *line,
                                        char **key_out, char **value_out);
 char *expand_filename(const char *filename);
