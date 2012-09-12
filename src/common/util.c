@@ -1805,7 +1805,7 @@ file_status(const char *fname)
   }
   if (st.st_mode & S_IFDIR)
     return FN_DIR;
-  else if (st.st_mode & S_IFREG)
+  else if (st.st_mode & (S_IFREG | S_IFIFO))
     return FN_FILE;
   else
     return FN_ERROR;
@@ -2237,6 +2237,42 @@ write_bytes_to_new_file(const char *fname, const char *str, size_t len,
                                   (bin?O_BINARY:O_TEXT));
 }
 
+/**
+ * Read the contents of the open file <b>fd</b> presuming it is a FIFO
+ * (or similar) file descriptor for which the size of the file isn't
+ * known ahead of time. NULL is returned if this fails for some reason.
+ */
+
+char *
+read_file_to_str_from_fifo(int fd)
+{
+  ssize_t r;
+  size_t pos = 0;
+  char *string = 0;
+  char buf[256];
+  string = NULL;
+
+  do {
+    r = read(fd, buf, 256);
+    if (r < 0) {
+      if (string)
+	tor_free(string);
+      return NULL;
+    }
+
+    if (r == 0)
+      break;
+    
+    string = tor_realloc(string, pos + (size_t)r + 1);
+
+    memcpy(string+pos, buf, r);
+    pos += r;
+  } while(r>0);
+  
+  string[pos] = '\0';
+  return string;
+}
+
 /** Read the contents of <b>filename</b> into a newly allocated
  * string; return the string on success or NULL on failure.
  *
@@ -2283,6 +2319,14 @@ read_file_to_str(const char *filename, int flags, struct stat *stat_out)
     log_warn(LD_FS,"Could not fstat \"%s\".",filename);
     errno = save_errno;
     return NULL;
+  }
+
+  if (S_ISFIFO(statbuf.st_mode)) {
+      string = read_file_to_str_from_fifo(fd);
+      if (string && stat_out) {
+	  memcpy(stat_out, &statbuf, sizeof(struct stat));
+      }
+      return string;
   }
 
   if ((uint64_t)(statbuf.st_size)+1 >= SIZE_T_CEILING)
