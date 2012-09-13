@@ -2256,19 +2256,19 @@ read_file_to_str_from_fifo(int fd)
     r = read(fd, buf, 256);
     if (r < 0) {
       if (string)
-	tor_free(string);
+        tor_free(string);
       return NULL;
     }
 
     if (r == 0)
       break;
-    
+
     string = tor_realloc(string, pos + (size_t)r + 1);
 
     memcpy(string+pos, buf, r);
     pos += r;
-  } while(r>0);
-  
+  } while (r > 0);
+
   string[pos] = '\0';
   return string;
 }
@@ -2324,7 +2324,7 @@ read_file_to_str(const char *filename, int flags, struct stat *stat_out)
   if (S_ISFIFO(statbuf.st_mode)) {
       string = read_file_to_str_from_fifo(fd);
       if (string && stat_out) {
-	  memcpy(stat_out, &statbuf, sizeof(struct stat));
+        memcpy(stat_out, &statbuf, sizeof(struct stat));
       }
       return string;
   }
