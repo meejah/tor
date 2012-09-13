@@ -19,6 +19,28 @@
 #endif
 
 static void
+test_util_read_file_fifo(void)
+{
+#ifndef _WIN32
+  char fifo_name[64];
+  strcpy(fifo_name, "/tmp/tor_test_fifo.XXXXXX");
+  int fd = mkstemp(fifo_name);
+  test_neq(fd, -1);
+  test_eq(write(fd, "somethingsomething", 19), 19);
+  close(fd);
+
+  int read_fd = open(fifo_name, O_RDONLY);
+  char *str = read_file_to_str_from_fifo(read_fd);
+  close(read_fd);
+
+  test_eq(strcmp(str, "somethingsomething"), 0);
+
+ done:
+  unlink(fifo_name);
+#endif
+}
+
+static void
 test_util_time(void)
 {
   struct timeval start, end;
@@ -3191,6 +3213,7 @@ struct testcase_t util_tests[] = {
   UTIL_TEST(envnames, 0),
   UTIL_TEST(make_environment, 0),
   UTIL_TEST(set_env_var_in_sl, 0),
+  UTIL_TEST(read_file_fifo, 0),
   END_OF_TESTCASES
 };
 
