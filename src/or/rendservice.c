@@ -1023,7 +1023,7 @@ rend_service_load_auth_keys(rend_service_t *s, const char *hfname)
         ((int)s->auth_type - 1) << 4;
       if (base64_encode(desc_cook_out, 3*REND_DESC_COOKIE_LEN_BASE64+1,
                         extended_desc_cookie,
-                        REND_DESC_COOKIE_LEN+1) < 0) {
+                        REND_DESC_COOKIE_LEN) < 0) {
         log_warn(LD_BUG, "Could not base64-encode descriptor cookie.");
         goto err;
       }
